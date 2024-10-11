@@ -612,7 +612,6 @@ function App() {
   }, [selectedSets]);
 
   const loadSelectedSets = () => {
-    // Save the current set's score before loading a new set
     if (attempted > 0) {
       const setKey = selectedSets.join(',');
       setSetScores(prevScores => ({
@@ -676,24 +675,42 @@ function App() {
       </div>
       <div style={{ marginBottom: '10px' }}>
         <p>Select sets to practice:</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '5px', 
+          marginBottom: '10px',
+          maxHeight: '150px',
+          overflowY: 'auto',
+          padding: '5px',
+          border: '1px solid #ccc',
+          borderRadius: '5px'
+        }}>
           {[...Array(totalSets)].map((_, i) => {
             const setNum = i + 1;
-            const lastScore = setScores[setNum] || 'No attempts';
+            const lastScore = setScores[setNum] || '0/0';
             return (
               <button
                 key={setNum}
                 onClick={() => handleSetSelection(setNum)}
                 style={{
-                  padding: '5px 10px',
+                  padding: '5px',
+                  minWidth: '40px',
+                  height: '40px',
+                  fontSize: '12px',
                   backgroundColor: selectedSets.includes(setNum) ? '#4CAF50' : '#f1f1f1',
                   color: selectedSets.includes(setNum) ? 'white' : 'black',
                   border: 'none',
                   borderRadius: '5px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center'
                 }}
               >
-                Set {setNum} - Last: {lastScore}
+                <div>{setNum}</div>
+                <div>{lastScore}</div>
               </button>
             );
           })}
@@ -725,6 +742,7 @@ function App() {
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button onClick={() => handleAnswer(false)} style={{ fontSize: '18px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', borderRadius: '5px' }}>Incorrect</button>
+        <button onClick={flipCard} style={{ fontSize: '18px', padding: '10px 20px', backgroundColor: 'blue', color: 'white', border: 'none', borderRadius: '5px' }}>Flip</button>
         <button onClick={() => handleAnswer(true)} style={{ fontSize: '18px', padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Correct</button>
       </div>
     </div>
