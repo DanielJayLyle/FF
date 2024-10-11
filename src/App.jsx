@@ -594,204 +594,54 @@ const allFlashcards = [
   { japanese: '雲', pronunciation: 'kumo', translation: 'cloud' },
   { japanese: '空', pronunciation: 'sora', translation: 'sky' },
   { japanese: '人気', pronunciation: 'ninki', translation: 'popularity' },
-  // ... (other flashcards)
 ];
-
-const styles = {
-  container: {
-    fontFamily: 'Arial, sans-serif',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#f3f4f6',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    padding: '2rem',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '1.5rem',
-  },
-  title: {
-    fontSize: '1.875rem',
-    fontWeight: 'bold',
-    color: '#4f46e5',
-  },
-  iconButton: {
-    fontSize: '1.5rem',
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    marginLeft: '0.5rem',
-  },
-  select: {
-    width: '100%',
-    padding: '0.5rem',
-    marginBottom: '1rem',
-    borderRadius: '4px',
-    border: '1px solid #d1d5db',
-  },
-  flashcard: {
-    backgroundColor: '#e0e7ff',
-    border: '2px solid #a5b4fc',
-    borderRadius: '8px',
-    padding: '2rem',
-    minHeight: '200px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'pointer',
-    marginBottom: '1.5rem',
-    transition: 'transform 0.3s',
-  },
-  japaneseText: {
-    fontSize: '2.25rem',
-    fontWeight: 'bold',
-    color: '#4f46e5',
-    marginBottom: '0.5rem',
-  },
-  pronunciationText: {
-    fontSize: '1.25rem',
-    color: '#6366f1',
-  },
-  translationText: {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: '#4338ca',
-  },
-  buttonContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  button: {
-    fontWeight: 'bold',
-    padding: '0.5rem 1rem',
-    borderRadius: '9999px',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s',
-  },
-  incorrectButton: {
-    backgroundColor: '#ef4444',
-    color: 'white',
-  },
-  correctButton: {
-    backgroundColor: '#10b981',
-    color: 'white',
-  },
-  flipButton: {
-    backgroundColor: '#d1d5db',
-    color: '#4b5563',
-  },
-  modal: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    maxWidth: '500px',
-    width: '100%',
-  },
-  modalTitle: {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    marginBottom: '1rem',
-  },
-  closeButton: {
-    backgroundColor: '#4f46e5',
-    color: 'white',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '9999px',
-    cursor: 'pointer',
-    marginTop: '1rem',
-  },
-};
 
 function App() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [currentSet, setCurrentSet] = useState([]);
-  const [setNumber, setSetNumber] = useState(1);
+  const [selectedSets, setSelectedSets] = useState([1]);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
-  const [dailyScores, setDailyScores] = useState({});
-  const [showStats, setShowStats] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [cardOrder, setCardOrder] = useState('random');
-  const [difficulty, setDifficulty] = useState('all');
+  const [setScores, setSetScores] = useState({});
 
   const totalSets = Math.ceil(allFlashcards.length / 20);
 
   useEffect(() => {
-    loadSet(1);
-    loadDailyScores();
-  }, []);
+    loadSelectedSets();
+  }, [selectedSets]);
 
-  const loadDailyScores = () => {
-    const storedScores = localStorage.getItem('dailyScores');
-    if (storedScores) {
-      setDailyScores(JSON.parse(storedScores));
-    }
-  };
-
-  const saveDailyScore = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const newDailyScores = { ...dailyScores };
-    if (!newDailyScores[today]) {
-      newDailyScores[today] = {};
-    }
-    if (!newDailyScores[today][setNumber] || score > newDailyScores[today][setNumber]) {
-      newDailyScores[today][setNumber] = score;
-    }
-    setDailyScores(newDailyScores);
-    localStorage.setItem('dailyScores', JSON.stringify(newDailyScores));
-  };
-
-  const loadSet = (setNum) => {
+  const loadSelectedSets = () => {
+    // Save the current set's score before loading a new set
     if (attempted > 0) {
-      saveDailyScore();
+      const setKey = selectedSets.join(',');
+      setSetScores(prevScores => ({
+        ...prevScores,
+        [setKey]: `${score}/${attempted}`
+      }));
     }
 
-    const startIndex = (setNum - 1) * 20;
-    const endIndex = Math.min(startIndex + 20, allFlashcards.length);
-    let newSet = allFlashcards.slice(startIndex, endIndex);
-
-    if (cardOrder === 'random') {
-      newSet = newSet.sort(() => Math.random() - 0.5);
-    }
-
-    if (difficulty !== 'all') {
-      // This is a placeholder for difficulty filtering
-      // You would need to implement a way to track card difficulty
-      newSet = newSet.filter(card => card.difficulty === difficulty);
-    }
-
-    setCurrentSet(newSet);
+    let newSet = [];
+    selectedSets.forEach(setNum => {
+      const startIndex = (setNum - 1) * 20;
+      const endIndex = Math.min(startIndex + 20, allFlashcards.length);
+      newSet = [...newSet, ...allFlashcards.slice(startIndex, endIndex)];
+    });
+    setCurrentSet(newSet.sort(() => Math.random() - 0.5));
     setCurrentCardIndex(0);
     setIsFlipped(false);
-    setSetNumber(setNum);
     setScore(0);
     setAttempted(0);
+  };
+
+  const handleSetSelection = (setNum) => {
+    setSelectedSets(prev => {
+      if (prev.includes(setNum)) {
+        return prev.filter(num => num !== setNum);
+      } else {
+        return [...prev, setNum].sort((a, b) => a - b);
+      }
+    });
   };
 
   const nextCard = () => {
@@ -799,7 +649,6 @@ function App() {
       setCurrentCardIndex(currentCardIndex + 1);
       setIsFlipped(false);
     } else {
-      saveDailyScore();
       setIsFlipped(false);
     }
   };
@@ -818,139 +667,66 @@ function App() {
 
   const currentCard = currentSet[currentCardIndex];
 
-  const renderStats = () => (
-    <div style={styles.modal}>
-      <div style={styles.modalContent}>
-        <h2 style={styles.modalTitle}>Your Progress</h2>
-        <div>
-          <h3 style={{...styles.modalTitle, fontSize: '1.25rem'}}>Daily Scores</h3>
-          {Object.entries(dailyScores).map(([date, sets]) => (
-            <div key={date} style={{marginBottom: '1rem'}}>
-              <p style={{fontWeight: 'bold'}}>{date}</p>
-              {Object.entries(sets).map(([set, score]) => (
-                <p key={set}>Set {set}: {score}/20</p>
-              ))}
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={() => setShowStats(false)}
-          style={styles.closeButton}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderSettings = () => (
-    <div style={styles.modal}>
-      <div style={styles.modalContent}>
-        <h2 style={styles.modalTitle}>Settings</h2>
-        <div style={{marginBottom: '1rem'}}>
-          <label style={{display: 'block', marginBottom: '0.5rem'}}>Card Order</label>
-          <select
-            value={cardOrder}
-            onChange={(e) => setCardOrder(e.target.value)}
-            style={styles.select}
-          >
-            <option value="random">Random</option>
-            <option value="sequential">Sequential</option>
-          </select>
-        </div>
-        <div style={{marginBottom: '1rem'}}>
-          <label style={{display: 'block', marginBottom: '0.5rem'}}>Difficulty</label>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            style={styles.select}
-          >
-            <option value="all">All</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <button
-          onClick={() => setShowSettings(false)}
-          style={styles.closeButton}
-        >
-          Save and Close
-        </button>
-      </div>
-    </div>
-  );
-
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Japanese Flashcards</h1>
-          <div>
-            <button onClick={() => setShowStats(true)} style={styles.iconButton}>
-              📊
-            </button>
-            <button onClick={() => setShowSettings(true)} style={styles.iconButton}>
-              ⚙️
-            </button>
-          </div>
-        </div>
-        <div style={{textAlign: 'center', marginBottom: '1rem'}}>
-          <p>Set {setNumber} of {totalSets} - Card {currentCardIndex + 1} of {currentSet.length}</p>
-          <p style={{fontSize: '1.25rem', fontWeight: 'bold'}}>Score: {score}/{attempted}</p>
-        </div>
-        <select 
-          value={setNumber} 
-          onChange={(e) => loadSet(Number(e.target.value))}
-          style={styles.select}
-        >
+    <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+      <h1 style={{ textAlign: 'center' }}>Japanese Flashcards</h1>
+      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+        <p>Card {currentCardIndex + 1} of {currentSet.length}</p>
+        <p>Current Score: {score}/{attempted}</p>
+      </div>
+      <div style={{ marginBottom: '10px' }}>
+        <p>Select sets to practice:</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
           {[...Array(totalSets)].map((_, i) => {
             const setNum = i + 1;
-            const today = new Date().toISOString().split('T')[0];
-            const todayScore = dailyScores[today]?.[setNum] || 'No attempts';
+            const lastScore = setScores[setNum] || 'No attempts';
             return (
-              <option key={setNum} value={setNum}>
-                Set {setNum} - Today's Best: {todayScore}/20
-              </option>
+              <button
+                key={setNum}
+                onClick={() => handleSetSelection(setNum)}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: selectedSets.includes(setNum) ? '#4CAF50' : '#f1f1f1',
+                  color: selectedSets.includes(setNum) ? 'white' : 'black',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Set {setNum} - Last: {lastScore}
+              </button>
             );
           })}
-        </select>
-        <div 
-          onClick={flipCard}
-          style={styles.flashcard}
-        >
-          {isFlipped ? (
-            <p style={styles.translationText}>{currentCard?.translation}</p>
-          ) : (
-            <>
-              <p style={styles.japaneseText}>{currentCard?.japanese}</p>
-              <p style={styles.pronunciationText}>{currentCard?.pronunciation}</p>
-            </>
-          )}
-        </div>
-        <div style={styles.buttonContainer}>
-          <button 
-            onClick={() => handleAnswer(false)} 
-            style={{...styles.button, ...styles.incorrectButton}}
-          >
-            Incorrect
-          </button>
-          <button
-            onClick={flipCard}
-            style={{...styles.button, ...styles.flipButton}}
-          >
-            👁️
-          </button>
-          <button 
-            onClick={() => handleAnswer(true)} 
-            style={{...styles.button, ...styles.correctButton}}
-          >
-            Correct
-          </button>
         </div>
       </div>
-      {showStats && renderStats()}
-      {showSettings && renderSettings()}
+      <div 
+        onClick={flipCard}
+        style={{
+          border: '1px solid #ccc',
+          borderRadius: '10px',
+          padding: '20px',
+          minHeight: '200px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          cursor: 'pointer',
+          marginBottom: '20px'
+        }}
+      >
+        {isFlipped ? (
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{currentCard?.translation}</p>
+        ) : (
+          <>
+            <p style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '10px' }}>{currentCard?.japanese}</p>
+            <p style={{ fontSize: '18px' }}>{currentCard?.pronunciation}</p>
+          </>
+        )}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <button onClick={() => handleAnswer(false)} style={{ fontSize: '18px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', borderRadius: '5px' }}>Incorrect</button>
+        <button onClick={() => handleAnswer(true)} style={{ fontSize: '18px', padding: '10px 20px', backgroundColor: 'green', color: 'white', border: 'none', borderRadius: '5px' }}>Correct</button>
+      </div>
     </div>
   );
 }
