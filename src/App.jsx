@@ -604,6 +604,7 @@ function App() {
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
   const [setScores, setSetScores] = useState({});
+  const [currentSetScores, setCurrentSetScores] = useState({});
 
   const totalSets = Math.ceil(allFlashcards.length / 20);
 
@@ -612,12 +613,13 @@ function App() {
   }, [selectedSets]);
 
   const loadSelectedSets = () => {
+    // Save the current set scores before loading new sets
     if (attempted > 0) {
-      const setKey = selectedSets.join(',');
-      setSetScores(prevScores => ({
-        ...prevScores,
-        [setKey]: `${score}/${attempted}`
-      }));
+      const newSetScores = { ...setScores };
+      selectedSets.forEach(setNum => {
+        newSetScores[setNum] = currentSetScores[setNum] || '0/0';
+      });
+      setSetScores(newSetScores);
     }
 
     let newSet = [];
@@ -631,6 +633,7 @@ function App() {
     setIsFlipped(false);
     setScore(0);
     setAttempted(0);
+    setCurrentSetScores({});
   };
 
   const handleSetSelection = (setNum) => {
@@ -648,6 +651,12 @@ function App() {
       setCurrentCardIndex(currentCardIndex + 1);
       setIsFlipped(false);
     } else {
+      // Save scores when the set is completed
+      const newSetScores = { ...setScores };
+      selectedSets.forEach(setNum => {
+        newSetScores[setNum] = `${score}/${attempted}`;
+      });
+      setSetScores(newSetScores);
       setIsFlipped(false);
     }
   };
@@ -661,6 +670,15 @@ function App() {
       setScore(score + 1);
     }
     setAttempted(attempted + 1);
+    
+    // Update current set scores
+    const newCurrentSetScores = { ...currentSetScores };
+    selectedSets.forEach(setNum => {
+      const [currentCorrect, currentAttempted] = (newCurrentSetScores[setNum] || '0/0').split('/').map(Number);
+      newCurrentSetScores[setNum] = `${currentCorrect + (correct ? 1 : 0)}/${currentAttempted + 1}`;
+    });
+    setCurrentSetScores(newCurrentSetScores);
+    
     nextCard();
   };
 
