@@ -594,14 +594,13 @@ const allFlashcards = [
   { japanese: '雲', pronunciation: 'kumo', translation: 'cloud' },
   { japanese: '空', pronunciation: 'sora', translation: 'sky' },
   { japanese: '人気', pronunciation: 'ninki', translation: 'popularity' },
-  // Your 150 flashcards here
 ];
 
 function App() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [currentSet, setCurrentSet] = useState([]);
-  const [setNumber, setSetNumber] = useState(1);
+  const [selectedSets, setSelectedSets] = useState([1]);
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
   const [setScores, setSetScores] = useState({});
@@ -609,27 +608,40 @@ function App() {
   const totalSets = Math.ceil(allFlashcards.length / 20);
 
   useEffect(() => {
-    loadSet(1);
-  }, []);
+    loadSelectedSets();
+  }, [selectedSets]);
 
-  const loadSet = (setNum) => {
+  const loadSelectedSets = () => {
     // Save the current set's score before loading a new set
     if (attempted > 0) {
+      const setKey = selectedSets.join(',');
       setSetScores(prevScores => ({
         ...prevScores,
-        [setNumber]: `${score}/${attempted}`
+        [setKey]: `${score}/${attempted}`
       }));
     }
 
-    const startIndex = (setNum - 1) * 20;
-    const endIndex = Math.min(startIndex + 20, allFlashcards.length);
-    const newSet = allFlashcards.slice(startIndex, endIndex).sort(() => Math.random() - 0.5);
-    setCurrentSet(newSet);
+    let newSet = [];
+    selectedSets.forEach(setNum => {
+      const startIndex = (setNum - 1) * 20;
+      const endIndex = Math.min(startIndex + 20, allFlashcards.length);
+      newSet = [...newSet, ...allFlashcards.slice(startIndex, endIndex)];
+    });
+    setCurrentSet(newSet.sort(() => Math.random() - 0.5));
     setCurrentCardIndex(0);
     setIsFlipped(false);
-    setSetNumber(setNum);
     setScore(0);
     setAttempted(0);
+  };
+
+  const handleSetSelection = (setNum) => {
+    setSelectedSets(prev => {
+      if (prev.includes(setNum)) {
+        return prev.filter(num => num !== setNum);
+      } else {
+        return [...prev, setNum].sort((a, b) => a - b);
+      }
+    });
   };
 
   const nextCard = () => {
@@ -637,7 +649,6 @@ function App() {
       setCurrentCardIndex(currentCardIndex + 1);
       setIsFlipped(false);
     } else {
-      // If we're at the end of the set, stay on the last card
       setIsFlipped(false);
     }
   };
@@ -660,25 +671,33 @@ function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
       <h1 style={{ textAlign: 'center' }}>Japanese Flashcards</h1>
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <p>Set {setNumber} of {totalSets} - Card {currentCardIndex + 1} of {currentSet.length}</p>
+        <p>Card {currentCardIndex + 1} of {currentSet.length}</p>
         <p>Current Score: {score}/{attempted}</p>
       </div>
       <div style={{ marginBottom: '10px' }}>
-        <select 
-          value={setNumber} 
-          onChange={(e) => loadSet(Number(e.target.value))}
-          style={{ width: '100%', padding: '5px' }}
-        >
+        <p>Select sets to practice:</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
           {[...Array(totalSets)].map((_, i) => {
             const setNum = i + 1;
             const lastScore = setScores[setNum] || 'No attempts';
             return (
-              <option key={setNum} value={setNum}>
-                Set {setNum} - Last Score: {lastScore}
-              </option>
+              <button
+                key={setNum}
+                onClick={() => handleSetSelection(setNum)}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: selectedSets.includes(setNum) ? '#4CAF50' : '#f1f1f1',
+                  color: selectedSets.includes(setNum) ? 'white' : 'black',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Set {setNum} - Last: {lastScore}
+              </button>
             );
           })}
-        </select>
+        </div>
       </div>
       <div 
         onClick={flipCard}
